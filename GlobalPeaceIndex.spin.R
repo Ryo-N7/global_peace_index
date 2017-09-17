@@ -14,15 +14,8 @@ GPI <- url %>%
   read_html() %>% 
   html_nodes(xpath = '//*[@id="mw-content-text"]/div/table[2]') %>%
   .[[1]] %>% 
-  html_table()
-
-wut <- url %>% 
-  read_html() %>% 
-  html_nodes(xpath = '//*[@id="mw-content-text"]/div/table[2]') %>%
   html_table(fill = T)
-glimpse(wut)
 
-.border
 
 # Inspect scraped data ----------------------------------------------------
 
@@ -71,35 +64,44 @@ str(GPI_rank)
 
 GPI_rank %>% head(15)
 # take out manually?     use duplicate()  ???
+
+GPI_rank[10:11, 3]
+GPI_rank[10:11, 3] <- c(10, 11)
+GPI_rank[10:11, 3]
+
+GPI_rank[19:20, 3]
+GPI_rank[19:20, 3] <- c(19, 20)
+GPI_rank[19:20, 3]
+
+GPI_rank[41:42, 3]
+GPI_rank[41:42, 3] <- c(41, 42)
+GPI_rank[41:42, 3]
+
+GPI_rank[84:85, 3]
+GPI_rank[84:85, 3] <- c(84, 85)
+GPI_rank[84:85, 3]
+
+GPI_rank[97:98, 3]
+GPI_rank[97:98, 3] <- c(97, 98)
+GPI_rank[97:98, 3]
+
+GPI_rank[146:147, 3]
+GPI_rank[146:147, 3] <- c(146, 147)
+GPI_rank[146:147, 3]
+
+GPI_rank[155:156, 3]
+GPI_rank[155:156, 3] <- c(155, 156)
+GPI_rank[155:156, 3]
+
+GPI_rank[1507, 3] <- 41     # Taiwan as 41 due to alphabetical order...
+GPI_rank[1514, 3] 
+
 # change 'rank' variable into numeric/int
 
 GPI_rank %>% glimpse()
 GPI_rank$rank <- as.numeric(GPI_rank$rank)
 GPI_rank %>% glimpse()
-GPI_rank <- GPI_rank %>% arrange(year, rank)
 
-GPI_rank %>% 
-  filter(year == 2008) %>% 
-  select(rank) %>%  
-  duplicated() %>% 
-  as.data.frame() %>% 
-  rownames_to_column() %>% 
-  filter(. == TRUE)
-
-# use lapply() or map()
-duplicated_ranks <- lapply(unique(GPI_rank$year), function(x) {
-    select(x$rank) %>%  
-    duplicated() %>% 
-    as.data.frame() %>% 
-    rownames_to_column() %>% 
-    filter(. == TRUE)
-}) 
-
-
-
-GPI_rank[37, 3] <- 41     # Taiwan as 41 due to alphabetical order...
-GPI_rank[37, 3] 
-GPI_rank[38, 3] 
 
 # Create custom theme -----------------------------------------------------
 
@@ -219,22 +221,3 @@ GPI_rank %>%
   labs(x = "Year", y = "Rank") +
   ggtitle("Global Peace Index (East Asia Region)\n (2008-2017)") +
   theme_peace
-
-GPI_rank %>% 
-  filter(rank <= 10) %>% 
-  mutate(jpn = ifelse(country == "Japan", T, F))
-
-GPI <- url %>% 
-  read_html() %>% 
-  html_nodes('table.wikitable:nth-child(29)') %>%
-  .[[1]] %>% 
-  html_table(fill = T)
-
-######## when the nuances of geom_"blank"(data = somethingsomething) doesnt screw up my prepared code
-# Then, in the next line, to filter our entire data set on the `East Asia` region that we just created. 
-# All of this is possible due to the wonderful `%>%` pipes which allow for a more streamlined workflow 
-# and doesn't force us to change our main dataset unless absolutely necessary as the subsetting here is 
-# only called within the context of making this plot!
-
-
-
