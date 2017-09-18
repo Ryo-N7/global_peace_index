@@ -49,8 +49,6 @@ Now with our data gathered, let's take a closer inspection at what we have:
 ```{r}
 # Inspect scraped data ----------------------------------------------------
 
-head(GPI, 5)
-
 glimpse(GPI)
 
 ```
@@ -58,7 +56,6 @@ glimpse(GPI)
 For my purposes I only need the data from the `rank` variables so I create a new dataframe excluding the `score` columns:
 
 ```{r}
-
 # Tidy dataset ------------------------------------------------------------
 # several are tied nth place == "=10" or etc..... just manually replace as not many NAs
 
@@ -67,11 +64,11 @@ GPI_rank <- GPI %>% select(Country, ends_with("rank"))
 colnames(GPI_rank) <- colnames(GPI_rank) %>% tolower()   # turn "Country" into lower case...
 colnames(GPI_rank)
 
-glimpse(GPI_rank)
-
 ```
 
-We see that the data is organized in an _"untidy"_ format or _"wide"_ format. To make our analysis workflow more smoother we need to convert this data frame into the _"long"_ format. We do this by using the `gather()` function in the `tidyr` package. For more information on the concept of "tidy data" Hadley's paper can be found [here](https://www.jstatsoft.org/article/view/v059i10/v59i10.pdf).
+In data analysis, one of the most important part of the process is the data cleanining or tidying process that we have began doing here. One of the main tenets of the cleaning process is to have a _tidy_ dataset where we arrange data so that each variable is a column and each observation is a row.
+
+We see that the data is organized in an _"untidy"_ or _"wide"_ format. To make our analysis workflow smoother we need to convert this data frame into the _tidy_ or _"long"_ format. We do this by using the `gather()` function in the `tidyr` package. For more details on the concept of "**tidy data**" Hadley Wickham's seminal paper on this subject can be found [here](https://www.jstatsoft.org/article/view/v059i10/v59i10.pdf).
 
 ```{r}
 GPI_rank <- GPI_rank %>% gather(`2017 rank`:`2008 rank`, key = "year", value = "rank")
@@ -110,16 +107,20 @@ GPI_rank <- GPI_rank %>% mutate(rank = str_replace(rank, "\\=", ""))   #   take 
 
 ```
 
-Now let's change the `rank` variable into a numeric format.
+Now let's change the `rank` variable into a numeric format and finally reorder the dataframe so that the rows are arranged in a way where ranks are in ascending order for each year (2008: Rank #1-#163, 2009: Rank #1-#163, etc.).
 
 ```{r}
 GPI_rank$rank <- as.numeric(GPI_rank$rank)
+
+GPI_rank <- GPI_rank %>% arrange(year, rank)
+
 GPI_rank %>% glimpse()
 
 ```
 
-In regards to actually detecting and replacing the values automatically I wasn't very successful. For each year, I can do this: 
+In regards to actually detecting and replacing duplicate values in a single automated function I wasn't very successful. However to detect duplicates for each year, I can do this: 
 ```{r}
+
 GPI_rank %>% 
   filter(year == 2017) %>%       # replace 2017 with each specific year...
   select(rank) %>%  
@@ -144,9 +145,13 @@ GPI_rank[1551:1552, 3]  # 84, 85
 GPI_rank[1565, 3] <- 98
 GPI_rank[1614, 3] <- 147
 GPI_rank[1623, 3] <- 156
+GPI_rank[1478, 3] <- 11
+
 ```
 
-I'm not going to bother manually changing all of them especially since there are a lot of NAs in the earlier years where many countries that show up in the later editions of the GPI had not been included yet. I'm sure there's a way to automate this using the above function and `lapply()`/`map()` to separate each year (to be able to better identify the problem rows) and then re-combine it all in one dataframe, I'll edit this section when I find out how to do it.
+I'm not going to bother manually changing all of them especially since there are a lot of NAs in the earlier years where many countries that show up in the later editions of the GPI had not been included yet. The most important thing is to make sure there aren't any tied rankings in the Top 10 for `2008` and `2017` as that's where our labels are going to be. 
+
+I'm sure there's a way to automate this using the function I used to detect duplicates with `lapply()`/`map()` to combine the duplicates in each year all in one dataframe, I'll edit this section when I find out how to do it.
 
 Now let's create a custom theme we can add on to our plot and call it... `theme_peace`!
 
@@ -181,20 +186,18 @@ GPI_rank %>%
   geom_point(aes(color = jpn, alpha = jpn), size = 2.3) +
   geom_text(data = GPI_rank %>% filter(year == "2008", rank <= 10), 
             aes(label = country, x = "2008"), color = "black", size = 4, nudge_x = -1.5) +
-  geom_text_repel(data = GPI_rank %>% filter(year == "2017", rank <= 10), 
+  geom_text(data = GPI_rank %>% filter(year == "2017", rank <= 10), 
             aes(label = country, x = "2017"), color = "black", size = 4, nudge_x = 1.5) +
   scale_y_reverse(breaks = pretty_breaks(10)) +
   scale_x_discrete(expand = c(0.15, 0.1)) +
-  scale_color_manual(values = c("#104E8B", "#EE2C2C")) +     # set all non-Japan to blue, Japan to red
+  scale_color_manual(values = c("#104E8B", "#EE2C2C")) + 
   labs(x = "Year", y = "Rank") +
   ggtitle("Global Peace Index (Top 10)", subtitle = "(2008-2017)") +
   theme_peace
 
-##### FOR SOME REASON JAPAN LINE EXTENDS TO 2017 EVEN WHEN ITS NOT IN TOP 10
-
 ```
 
-We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017! Could this be as a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region between 2008 and 2017! Neither `Macau` or `Hong Kong` are not in the data as they are counted as dependent territories and from what we know of recent conflicts in the _marginal seas_ of the Pacific we include ASEAN contries such as Vietnam and the Philippines.  
+We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017 (NOTE: technically Ireland and Japan were tied for 10th in 2017)! Could this be a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region between 2008 and 2017! Neither `Macau` or `Hong Kong` are not in the data as they are counted as dependent territories and from what we know of recent conflicts in the _marginal seas_ of the Pacific we include ASEAN contries such as Vietnam and the Philippines.  
 
 ```{r}
 # Subset custom "East Asia" region -----------------------------------------------
@@ -229,7 +232,7 @@ GPI_Asia %>%
 
 ```
 
-There could still be some improvements made to this plot, specifically, the country labels on either side of the x-axis limits. Using the `gg_repel` package the labels will be spread out better with a corresponding line pointing to the right line and point. We can manually set colors to each of our custom "East Asia" region countries to further differntiate each line and make it more easy to read:
+There could still be some improvements made to this plot, specifically, the country labels on either side of the x-axis limits. We can fix this by Using the `gg_repel` package that will spread out them ot with a small line from the label box pointing to the corresponding line or point. We can also, manually set colors to each of our custom "East Asia" region countries to further differntiate each line and make it more easy to read:
 
 ```{r}
 # plot with filter()  East Asia
