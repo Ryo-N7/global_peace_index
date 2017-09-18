@@ -160,7 +160,7 @@ theme_peace <-
   theme(plot.subtitle = element_text(size = 12, hjust = 0.5)) +
   theme(axis.title = element_text(size = 14)) +
   theme(axis.title.y = element_text(angle = 0, vjust = 0.5, margin = margin(r = 15))) +
-  theme(axis.text = element_text(size = 10)) +
+  theme(axis.text = element_text(size = 12)) +
   theme(axis.title.x = element_text(margin = margin(t = 20))) +
   theme(legend.title = element_blank()) +
   theme(legend.position = "none")
@@ -181,7 +181,7 @@ GPI_rank %>%
   geom_point(aes(color = jpn, alpha = jpn), size = 2.3) +
   geom_text(data = GPI_rank %>% filter(year == "2008", rank <= 10), 
             aes(label = country, x = "2008"), color = "black", size = 4, nudge_x = -1.5) +
-  geom_text(data = GPI_rank %>% filter(year == "2017", rank <= 10), 
+  geom_text_repel(data = GPI_rank %>% filter(year == "2017", rank <= 10), 
             aes(label = country, x = "2017"), color = "black", size = 4, nudge_x = 1.5) +
   scale_y_reverse(breaks = pretty_breaks(10)) +
   scale_x_discrete(expand = c(0.15, 0.1)) +
@@ -190,14 +190,14 @@ GPI_rank %>%
   ggtitle("Global Peace Index (Top 10)", subtitle = "(2008-2017)") +
   theme_peace
 
+##### FOR SOME REASON JAPAN LINE EXTENDS TO 2017 EVEN WHEN ITS NOT IN TOP 10
+
 ```
 
-We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017! Could this be as a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region!
+We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017! Could this be as a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region between 2008 and 2017! Neither `Macau` or `Hong Kong` are not in the data as they are counted as dependent territories and from what we know of recent conflicts in the _marginal seas_ of the Pacific we include ASEAN contries such as Vietnam and the Philippines.  
 
 ```{r}
-# Subset "East Asia" region -----------------------------------------------
-
-# create sub-region of East Asia
+# Subset custom "East Asia" region -----------------------------------------------
 
 GPI_Asia <- GPI_rank %>% filter(country %in% c("Japan", "China", "Korea Republic", "DPR Korea", 
                                                "Philippines", "Taiwan", "Vietnam")) %>% 
@@ -245,7 +245,7 @@ colors = c(
 )
 ```
 
-change the variable type of `country` into a factor and then rename Korea Republic to S.Korea to fit graph labels better:
+Change the variable type of `country` into a factor and then rename _Korea Republic_ to _S.Korea_ and _DPR Korea_ to _N.Korea_ to fit graph labels better:
 
 ```{r}
 # rename Korea Republic to S.Korea to fit graph label better...
@@ -270,7 +270,7 @@ GPI_Asia %>%
   geom_label_repel(data = GPI_Asia %>% filter(year == "2017"), 
                    aes(label = country, x = "2017"), 
                    color = "black", size = 3.5, nudge_x = 1.5,
-                   fontface = "bold", segment.colour = "red", segment.size = 1.0) +
+                   fontface = "bold", segment.colour = "red") +
   scale_y_reverse(breaks = c(1, 5, seq(10, 160, by = 10))) +
   scale_x_discrete(expand = c(0.2, 0.05)) +
   labs(x = "Year", y = "Rank") +
@@ -280,7 +280,7 @@ GPI_Asia %>%
 
 ```
 
-Of course, the changes in rankings aren't all due to inter-country conflicts as it is only 1 of the 22 indicators used to calcualte the GPI score. 
+Of course, the changes in rankings aren't _all_ due to inter-country conflicts as it is only 1 of the 23 indicators used to calculate the GPI score. Both external peace indicators (*military expenditure as a percentage of GDP*, _nuclear and heavey weapons capabilities_, and _relations with neighboring countries_) **and** internal peace indicators (*level of violent crime*, _political instability_, _impact of terrorism_) are used in the GPI. The full run-down on the various indicators can be found in Appendix B of the most recent GPI Report [here](http://visionofhumanity.org/app/uploads/2017/06/GPI17-Report.pdf).
 
 There is another way to do the above but first I'll clean up the data further by changing the names of the Koreas in the main dataset like we did in `GPI_Asia` then fix one of the values:
 
@@ -296,14 +296,18 @@ GPI_rank[37, 3] <- 41     # in 2008 S.Korea and Taiwan were tied 40th
 
 Instead of creating new subset of our data, we can reduce clutter in our R environment by using `magrittr` pipes before plotting!
 
-To do the same thing as creating a separate dataset (like `GPI_Asia`) is to simply create a new variable called `region` inside our existing `GPI_rank` data frame. 
+To do the same thing without creating a separate dataset (like `GPI_Asia`) is to simply create a new variable called `region` inside our existing `GPI_rank` data frame and then use the `filter()` function right before we pipe it through our `ggplot` code: 
 
 ```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = "cairo_pdf")
 # Piping before plotting East Asia ----------------------------------------
+
 GPI_rank <- GPI_rank %>% 
       mutate(region = if_else(
       country %in% c("Japan", "China", "S.Korea", "N.Korea", "Philippines", "Taiwan", "Vietnam"), 
                           "East Asia", "Other")) 
+
+# Final plot: East Asia ---------------------------------------------------
 
 GPI_rank %>%
   filter(region == "East Asia") %>% 
@@ -314,15 +318,15 @@ GPI_rank %>%
     data = GPI_rank %>% 
       filter(year == "2008", region == "East Asia"), 
       aes(label = country, x = "2008"), 
-      color = "black", fontface = "bold", family = "Times",
+      color = "black", family = "Times New Roman", fontface = "bold",
       size = 4, nudge_x = -0.9) +
   geom_label_repel(
     data = GPI_rank %>% 
       filter(year == "2017", region == "East Asia"), 
       aes(label = country, x = "2017"), 
-      color = "black", fontface = "bold", family = "Verdana",
+      color = "black", family = "Century", fontface = "bold",
       size = 4, nudge_x = 0.9) +
-  scale_y_reverse(breaks = c(1, 5, seq(10, 160, by = 10))) +
+  scale_y_reverse(breaks = c(1, seq(10, 160, by = 10))) +
   scale_x_discrete(expand = c(0.2, 0.05)) +
   labs(x = "Year", y = "Rank") +
   ggtitle("Global Peace Index (East Asia Region)\n (2008-2017)") +
@@ -331,4 +335,4 @@ GPI_rank %>%
 
 ```
 
-
+With the colored lines and the labels we can clearly see the downward trend of GPI rankings for countries in the East Asia region. 

@@ -236,5 +236,9 @@ GPI <- url %>%
 # and doesn't force us to change our main dataset unless absolutely necessary as the subsetting here is 
 # only called within the context of making this plot!
 
+library(extrafont)
+library(extrafontdb)
+font_import() # only needs to be run once
+loadfonts(device = "win")    # needed to add (device = win)!!!
 
 
