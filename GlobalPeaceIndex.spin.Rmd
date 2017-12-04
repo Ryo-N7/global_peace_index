@@ -29,12 +29,6 @@ library(forcats)            # change factor levels manually
 
 url <- "https://en.wikipedia.org/wiki/Global_Peace_Index"
 
-GPI <- url %>% 
-  read_html() %>% 
-  html_nodes('table.wikitable:nth-child(29)') %>%
-  .[[1]] %>% 
-  html_table()
-
 # 12/1/17: update css selector to table.wikitable:nth-child(77)
 
 GPI <- url %>% 
@@ -43,23 +37,20 @@ GPI <- url %>%
   .[[1]] %>% 
   html_table(header = TRUE)
 
-write.csv(GPI, "~/R_materials/global_peace_index/GPI_raw.csv")
-
-GPI <- read.csv("~/R_materials/global_peace_index/GPI_raw.csv", stringsAsFactors = FALSE)
-
 ```
 
 Here we use the `read_html()` function to read the url of the web page, then we find the **CSS selector** of the table we want to use from the web page. 
 I will go through what I did above step-by-step (Using the Mozilla Firefox browser):
 
-1. Press **F12** or **Ctrl + Shift + C** to open up the *Inspector Tool* on the page you want to extract data from
-2. Click on the left-most button the pop-up bar
-3. Hover your mouse over the element of the page you want to extract. The console will scroll to the exact html code that you are point at
+1. Press **F12** or **Ctrl + Shift + C** to open up the *Inspector Tool* on the page you want to extract data from.
+2. Click on the left-most button on the pop-up bar.
+3. Hover your mouse over the element of the page you want to extract. The console will scroll to the exact html code that you are pointing at.
 4. Right-click on the highlighted html code, click on 'Copy' in the menu, then click on 'CSS Selector'
 5. Then Paste into R and place it inside the `html_nodes()` function as above within brackets.
 6. Select only the element with the table information (in this case there is only one element anyways), `[[1]]`.
 7. Finally we specifically extract the table using `html_table()`. You can use the `fill = ` option to autofill any poorly formatted tables. 
 
+There are other ways to do this such as using the *Selector Gadget* ([Tutorial](https://stat4701.github.io/edav/2015/04/02/rvest_tutorial/)).
 Now with our data gathered, let's take a closer inspection at what we have: 
 
 ```{r}
@@ -69,7 +60,7 @@ glimpse(GPI)
 
 ```
 
-For my purposes I only need the data from the `rank` variables so I create a new dataframe excluding the `score` columns. A neat trick here is to use the `ends_with()` function inside `select()` to select all the variables that end in **"rank"**, much easier than manually inputting every single **"rank"** column!
+For my purposes I only need the data from the `rank` variables so I create a new dataframe excluding the `score` columns. A neat trick here is to use the `ends_with()` function inside `select()` to select all the variables that end in **"rank"**, this is much easier than manually inputting every single **"rank"** column!
 
 ```{r}
 # Tidy dataset ------------------------------------------------------------
@@ -170,6 +161,8 @@ GPI_rank <- GPI_rank %>%
 
 Now ALL the tied ranks are fixed with the second tied rank value taking on a `n+1` rank value instead!
 
+## Plotting
+
 Now let's create a **custom ggplot theme** that we can add on to our plot and call it... `theme_peace`!
 
 ```{r}
@@ -214,7 +207,7 @@ GPI_rank %>%
 
 ```
 
-We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017 (*Note*: technically Ireland and Japan were tied for 10th in 2017)! Could this be a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region between 2008 and 2017! Neither `Macau` or `Hong Kong` are in the data as they are counted as dependent territories and from what we know of recent conflicts in the *"marginal seas"* of the Pacific we include ASEAN contries such as Vietnam and the Philippines.  
+We can clearly see that Japan's ranking has fallen from 2008 and even dropping out of the Top 10 altogether in 2017 (*Note*: technically Ireland and Japan were tied for 10th in 2017)! Could this be a result of the rising tensions in the past 10 years with its neighbors on a number of issues, such as the [East China Sea disputes](https://www.japantimes.co.jp/opinion/2017/08/29/commentary/japan-commentary/japans-maritime-diplomacy-mission-s-e-asia/), the more recent protests regarding the [comfort women issue](https://www.nytimes.com/2017/04/03/world/asia/japan-ambassador-south-korea-comfort-woman.html), and of course North Korea's recent [missile tests](http://www.bbc.co.uk/news/world-asia-41281050) among others? Let's see if there is a general downward trend in the East Asia region between 2008 and 2017! Neither `Macau` or `Hong Kong` are in the data as they are counted as dependent territories and from what we know of recent conflicts in the *"marginal seas"* of the Pacific, we include some ASEAN contries such as Vietnam and the Philippines.  
 
 ```{r}
 # Subset custom "East Asia" region -----------------------------------------------
@@ -224,8 +217,8 @@ GPI_Asia <- GPI_rank %>% filter(country %in% c("Japan", "China", "Korea Republic
   mutate(region = "East Asia")
 
 glimpse(GPI_Asia)
-GPI_Asia$rank <- as.numeric(GPI_Asia$rank)
 
+GPI_Asia$rank <- as.numeric(GPI_Asia$rank)
 
 ```
 
@@ -252,7 +245,6 @@ GPI_Asia %>%
 There could still be some improvements made to this plot, specifically, the country labels on either side of the x-axis limits. We can fix this by Using the `gg_repel` package that will spread them out and create a small line/arrow from the label box pointing to the corresponding line or point. We can also manually set colors to each of our custom "East Asia" region countries to further differntiate each line and make it more easy to read:
 
 ```{r}
-# plot with filter()  East Asia
 
 colors = c(
   Japan = "#EE2C2C",          # red
@@ -268,7 +260,7 @@ colors = c(
 Change the variable type of `country` into a **factor** and then rename _Korea Republic_ to _S.Korea_ and _DPR Korea_ to _N.Korea_ to fit graph labels better:
 
 ```{r fig.height=5, fig.width=8, fig.align='center'}
-# rename Korea Republic to S.Korea to fit graph label better...
+
 GPI_Asia$country <- as.factor(GPI_Asia$country)
 GPI_Asia %>% glimpse()
 
@@ -276,8 +268,6 @@ GPI_Asia <- GPI_Asia %>%
    mutate(country = fct_recode(country,
                                  "S.Korea" = "Korea Republic",
                                  "N.Korea" = "DPR Korea"))
-
-# use geom_text_repel() instead of regular geom_text() as doesnt have font-face for some stupid reason -_-"
 
 GPI_Asia %>%
   ggplot(aes(year, as.numeric(rank), group = country)) +
@@ -349,7 +339,7 @@ GPI_rank %>%
 
 ```
 
-With the colored lines and the labels we can clearly see the downward trend of GPI rankings for all countries in the East Asia region. The exception is Taiwan which although shown as 37th in 2008, it was technically tied with Tunisia and South Korea, so they reverted back to their 2008 rank following a brief rise.  
+With the colored lines and the labels we can clearly see the downward trend of GPI rankings for all countries in the East Asia region. The exception is Taiwan which although shown as 37th in 2008, it was technically tied with Tunisia and South Korea, and they basically reverted back to their actual 2008 rank (40th) after a brief rise.  
 
 Hopefully with initiatives like the GPI and the works of other peace-oriented think tanks, the public can identify different sources of problems that hinder peaceful co-existence both within-countries and between-countries and assist policy-makers in finding viable solutions!
 
